@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Payments">
+<meta name="theme-color" content="#0f1117">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>Student Payments</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --card: #1a1e2a;
+    --card2: #232a3b;
+    --text: #f2f4f8;
+    --muted: #8b93a7;
+    --accent: #6c8cff;
+    --accent2: #8b6cff;
+    --green: #34c77b;
+    --venmo: #3d95ce;
+    --zelle: #a15ce0;
+    --danger: #ff5d6c;
+    --radius: 18px;
+    --sat: env(safe-area-inset-top, 0px);
+    --sab: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    overscroll-behavior-y: none;
+    padding-top: var(--sat);
+  }
+  button { font-family: inherit; border: none; background: none; color: inherit; cursor: pointer; }
+  input { font-family: inherit; }
+
+  .app { max-width: 560px; margin: 0 auto; padding: 12px 16px calc(96px + var(--sab)); }
+
+  /* ---------- Header ---------- */
+  header { display: flex; align-items: center; justify-content: space-between; padding: 10px 2px 4px; }
+  header h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+  .hbtns { display: flex; gap: 10px; }
+  .iconbtn {
+    width: 42px; height: 42px; border-radius: 14px;
+    background: var(--card); display: flex; align-items: center; justify-content: center;
+    font-size: 19px; position: relative; transition: transform .1s;
+  }
+  .iconbtn:active { transform: scale(.92); }
+  .badge {
+    position: absolute; top: -5px; right: -5px; min-width: 19px; height: 19px; border-radius: 10px;
+    background: var(--danger); color: #fff; font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; padding: 0 5px;
+  }
+  .badge.hidden { display: none; }
+
+  /* ---------- Stats ---------- */
+  .stats {
+    display: flex; gap: 10px; margin: 12px 0 14px;
+  }
+  .stat {
+    flex: 1; background: linear-gradient(135deg, var(--card), var(--card2));
+    border-radius: var(--radius); padding: 14px 16px;
+  }
+  .stat .v { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+  .stat .l { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .stat.hero { background: linear-gradient(135deg, #4d6bff, #8b5cf6); }
+  .stat.hero .l { color: rgba(255,255,255,.75); }
+
+  /* ---------- Search ---------- */
+  .searchrow { display: flex; gap: 10px; margin-bottom: 14px; }
+  .searchbox {
+    flex: 1; display: flex; align-items: center; gap: 8px;
+    background: var(--card); border-radius: 16px; padding: 0 14px;
+  }
+  .searchbox span { color: var(--muted); font-size: 15px; }
+  .searchbox input {
+    flex: 1; background: none; border: none; outline: none; color: var(--text);
+    font-size: 16px; padding: 14px 0;
+  }
+  .searchbox input::placeholder { color: var(--muted); }
+  .clearbtn { color: var(--muted); font-size: 16px; padding: 6px; display: none; }
+
+  /* ---------- Student list ---------- */
+  .addrow {
+    display: none; align-items: center; gap: 12px; width: 100%;
+    background: linear-gradient(135deg, rgba(108,140,255,.15), rgba(139,108,255,.15));
+    border: 1.5px dashed rgba(108,140,255,.5);
+    border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px;
+    color: var(--accent); font-size: 16px; font-weight: 600; text-align: left;
+  }
+  .addrow:active { opacity: .7; }
+
+  .student {
+    display: flex; align-items: center; gap: 13px; width: 100%;
+    background: var(--card); border-radius: var(--radius);
+    padding: 13px 15px; margin-bottom: 9px; text-align: left; transition: transform .08s;
+  }
+  .student:active { transform: scale(.98); }
+  .avatar {
+    width: 46px; height: 46px; border-radius: 15px; flex: none;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 17px; color: #fff;
+  }
+  .sinfo { flex: 1; min-width: 0; }
+  .sname { font-size: 16.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ssub { font-size: 12.5px; color: var(--muted); margin-top: 3px; }
+  .stotal { text-align: right; }
+  .stotal .amt { font-size: 16.5px; font-weight: 800; color: var(--green); }
+  .stotal .cls { font-size: 11.5px; color: var(--muted); margin-top: 3px; }
+
+  .empty { text-align: center; color: var(--muted); padding: 48px 20px; font-size: 15px; line-height: 1.6; }
+  .empty .big { font-size: 44px; margin-bottom: 12px; }
+
+  /* ---------- Bottom sheets ---------- */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.55);
+    opacity: 0; pointer-events: none; transition: opacity .22s; z-index: 40;
+    backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+  }
+  .overlay.show { opacity: 1; pointer-events: auto; }
+  .sheet {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+    max-width: 560px; margin: 0 auto;
+    background: #171b26; border-radius: 26px 26px 0 0;
+    padding: 10px 20px calc(20px + var(--sab));
+    transform: translateY(105%); transition: transform .28s cubic-bezier(.32,.72,.35,1);
+    max-height: 88vh; max-height: 88dvh; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  }
+  .sheet.show { transform: translateY(0); }
+  .grab { width: 40px; height: 4.5px; border-radius: 3px; background: #3a4155; margin: 4px auto 14px; }
+  .sheethead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .sheethead h2 { font-size: 22px; font-weight: 800; letter-spacing: -0.4px; }
+  .subtle { color: var(--muted); font-size: 13px; }
+
+  .totalsrow { display: flex; gap: 9px; margin: 12px 0 16px; }
+  .pill {
+    background: var(--card2); border-radius: 13px; padding: 9px 14px; font-size: 13px;
+    color: var(--muted);
+  }
+  .pill b { color: var(--text); font-size: 14.5px; }
+
+  /* ---------- Quick add form ---------- */
+  .qa { background: var(--card); border-radius: 20px; padding: 16px; margin-bottom: 18px; }
+  .qa .row { display: flex; gap: 10px; margin-bottom: 12px; }
+  .field { flex: 1; }
+  .field label { display: block; font-size: 11.5px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+  .amountwrap { display: flex; align-items: center; background: var(--card2); border-radius: 14px; padding: 0 14px; }
+  .amountwrap .cur { font-size: 22px; font-weight: 700; color: var(--muted); margin-right: 4px; }
+  .amountwrap input {
+    width: 100%; background: none; border: none; outline: none; color: var(--text);
+    font-size: 26px; font-weight: 800; padding: 11px 0; letter-spacing: -0.5px;
+  }
+  .stepper { display: flex; align-items: center; background: var(--card2); border-radius: 14px; overflow: hidden; }
+  .stepper button { width: 46px; height: 52px; font-size: 22px; color: var(--accent); font-weight: 700; }
+  .stepper button:active { background: rgba(108,140,255,.12); }
+  .stepper .num { flex: 1; text-align: center; font-size: 21px; font-weight: 800; }
+  .datewrap { background: var(--card2); border-radius: 14px; padding: 0 12px; display: flex; align-items: center; }
+  .datewrap input {
+    width: 100%; background: none; border: none; outline: none; color: var(--text);
+    font-size: 16px; font-weight: 600; padding: 15px 0; color-scheme: dark;
+  }
+  .methods { display: flex; gap: 8px; }
+  .method {
+    flex: 1; padding: 12px 0; border-radius: 13px; background: var(--card2);
+    font-size: 14.5px; font-weight: 700; color: var(--muted);
+    border: 1.5px solid transparent; transition: all .12s;
+  }
+  .method.sel-cash { background: rgba(52,199,123,.16); color: var(--green); border-color: var(--green); }
+  .method.sel-venmo { background: rgba(61,149,206,.16); color: var(--venmo); border-color: var(--venmo); }
+  .method.sel-zelle { background: rgba(161,92,224,.16); color: var(--zelle); border-color: var(--zelle); }
+
+  .bigbtn {
+    width: 100%; padding: 16px; border-radius: 16px;
+    background: linear-gradient(135deg, #4d6bff, #8b5cf6);
+    color: #fff; font-size: 17px; font-weight: 800; letter-spacing: .2px;
+    transition: transform .1s, opacity .1s; margin-top: 2px;
+  }
+  .bigbtn:active { transform: scale(.98); opacity: .9; }
+  .bigbtn:disabled { opacity: .4; }
+
+  /* ---------- History ---------- */
+  .histhead { display: flex; justify-content: space-between; align-items: center; margin: 4px 2px 10px; }
+  .histhead h3 { font-size: 15px; font-weight: 700; color: var(--muted); }
+  .payrow {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--card); border-radius: 15px; padding: 12px 14px; margin-bottom: 8px;
+  }
+  .paydate { font-size: 13.5px; font-weight: 700; width: 62px; flex: none; }
+  .paydate .yr { display: block; font-size: 10.5px; color: var(--muted); font-weight: 600; }
+  .payinfo { flex: 1; font-size: 13px; color: var(--muted); }
+  .chip {
+    display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 8px; margin-top: 4px;
+  }
+  .chip.cash { background: rgba(52,199,123,.15); color: var(--green); }
+  .chip.venmo { background: rgba(61,149,206,.15); color: var(--venmo); }
+  .chip.zelle { background: rgba(161,92,224,.15); color: var(--zelle); }
+  .payamt { font-size: 16px; font-weight: 800; }
+  .del { color: var(--muted); font-size: 15px; padding: 8px 2px 8px 10px; }
+  .del:active { color: var(--danger); }
+
+  .dangertxt { color: var(--danger); font-weight: 700; font-size: 14px; padding: 12px; width: 100%; text-align: center; }
+
+  /* ---------- Settings ---------- */
+  .set-field { margin-bottom: 14px; }
+  .set-field label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 7px; }
+  .set-field input {
+    width: 100%; background: var(--card2); border: 1.5px solid transparent; border-radius: 13px;
+    color: var(--text); font-size: 15px; padding: 13px 14px; outline: none;
+  }
+  .set-field input:focus { border-color: var(--accent); }
+  .btnrow { display: flex; gap: 10px; margin-top: 6px; }
+  .secbtn {
+    flex: 1; padding: 14px; border-radius: 14px; background: var(--card2);
+    font-size: 15px; font-weight: 700; color: var(--text);
+  }
+  .secbtn:active { opacity: .7; }
+  .synced-note { text-align: center; color: var(--muted); font-size: 12.5px; margin-top: 14px; }
+
+  /* ---------- Toast ---------- */
+  .toast {
+    position: fixed; left: 50%; bottom: calc(30px + var(--sab)); transform: translate(-50%, 20px);
+    background: #2a3145; color: var(--text); font-size: 14.5px; font-weight: 600;
+    padding: 13px 22px; border-radius: 14px; opacity: 0; pointer-events: none;
+    transition: all .25s; z-index: 100; box-shadow: 0 8px 30px rgba(0,0,0,.4);
+    max-width: 88vw; text-align: center;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .toast.ok { background: #1d4d35; color: #7ef0b2; }
+  .toast.err { background: #55232b; color: #ff9aa5; }
+
+  .spin { display: inline-block; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Payments</h1>
+    <div class="hbtns">
+      <button class="iconbtn" id="syncBtn" title="Sync to cloud" aria-label="Sync to cloud">
+        <span id="syncIcon">☁️</span>
+        <span class="badge hidden" id="syncBadge">0</span>
+      </button>
+      <button class="iconbtn" id="settingsBtn" title="Settings" aria-label="Settings">⚙️</button>
+    </div>
+  </header>
+
+  <div class="stats">
+    <div class="stat hero">
+      <div class="v" id="statYear">$0</div>
+      <div class="l" id="statYearLabel">2025 total</div>
+    </div>
+    <div class="stat">
+      <div class="v" id="statMonth">$0</div>
+      <div class="l">This month</div>
+    </div>
+  </div>
+
+  <div class="searchrow">
+    <div class="searchbox">
+      <span>🔍</span>
+      <input type="search" id="search" placeholder="Search or add student…" autocomplete="off" autocapitalize="words">
+      <button class="clearbtn" id="clearSearch">✕</button>
+    </div>
+  </div>
+
+  <button class="addrow" id="addRow"></button>
+  <div id="studentList"></div>
+</div>
+
+<!-- overlay -->
+<div class="overlay" id="overlay"></div>
+
+<!-- Student sheet -->
+<div class="sheet" id="studentSheet">
+  <div class="grab"></div>
+  <div class="sheethead">
+    <div>
+      <h2 id="shName">Student</h2>
+      <div class="subtle" id="shSub"></div>
+    </div>
+    <button class="iconbtn" id="closeStudent" aria-label="Close">✕</button>
+  </div>
+  <div class="totalsrow" id="shTotals"></div>
+
+  <div class="qa">
+    <div class="row">
+      <div class="field" style="flex:1.3">
+        <label>Amount</label>
+        <div class="amountwrap">
+          <span class="cur">$</span>
+          <input type="text" id="qaAmount" inputmode="decimal" placeholder="0">
+        </div>
+      </div>
+      <div class="field">
+        <label>Classes</label>
+        <div class="stepper">
+          <button id="clsMinus" aria-label="Fewer classes">−</button>
+          <div class="num" id="qaClasses">1</div>
+          <button id="clsPlus" aria-label="More classes">+</button>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Date</label>
+        <div class="datewrap"><input type="date" id="qaDate"></div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Payment method</label>
+        <div class="methods">
+          <button class="method" data-m="Cash">💵 Cash</button>
+          <button class="method" data-m="Venmo">Venmo</button>
+          <button class="method" data-m="Zelle">Zelle</button>
+        </div>
+      </div>
+    </div>
+    <button class="bigbtn" id="qaSave">Add Payment</button>
+  </div>
+
+  <div class="histhead">
+    <h3>History</h3>
+    <span class="subtle" id="histCount"></span>
+  </div>
+  <div id="payList"></div>
+  <button class="dangertxt" id="deleteStudent">Delete student</button>
+</div>
+
+<!-- Settings sheet -->
+<div class="sheet" id="settingsSheet">
+  <div class="grab"></div>
+  <div class="sheethead">
+    <h2>Settings</h2>
+    <button class="iconbtn" id="closeSettings" aria-label="Close">✕</button>
+  </div>
+  <div style="height:14px"></div>
+  <div class="set-field">
+    <label>Cloud endpoint (Lambda URL)</label>
+    <input type="url" id="setEndpoint" placeholder="https://xxxx.lambda-url.us-west-2.on.aws/" autocapitalize="off" autocorrect="off">
+  </div>
+  <div class="set-field">
+    <label>Secret token</label>
+    <input type="password" id="setToken" placeholder="your secret token" autocapitalize="off" autocorrect="off">
+  </div>
+  <button class="bigbtn" id="saveSettings">Save Settings</button>
+  <div style="height:18px"></div>
+  <div class="btnrow">
+    <button class="secbtn" id="exportCsv">📄 Export CSV</button>
+    <button class="secbtn" id="restoreBtn">⬇️ Restore from Cloud</button>
+  </div>
+  <div class="synced-note" id="syncNote"></div>
+  <div style="height:8px"></div>
+  <button class="dangertxt" id="wipeBtn">Erase all data on this phone</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+
+/* ================= State ================= */
+const LS_STUDENTS = "spt_students_v1";
+const LS_PAYMENTS = "spt_payments_v1";
+const LS_SETTINGS = "spt_settings_v1";
+
+let students = load(LS_STUDENTS, []);
+let payments = load(LS_PAYMENTS, []);
+let settings = load(LS_SETTINGS, { endpoint: "", token: "", lastSyncAt: null });
+
+let currentStudentId = null;
+let qaMethod = "Cash";
+let qaClassCount = 1;
+
+function load(k, fb) {
+  try { const v = JSON.parse(localStorage.getItem(k)); return v ?? fb; } catch { return fb; }
+}
+function persist() {
+  localStorage.setItem(LS_STUDENTS, JSON.stringify(students));
+  localStorage.setItem(LS_PAYMENTS, JSON.stringify(payments));
+}
+function persistSettings() { localStorage.setItem(LS_SETTINGS, JSON.stringify(settings)); }
+
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const todayStr = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+};
+const fmtMoney = n => "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+
+const AVATAR_COLORS = ["#6c8cff","#ff8c6c","#34c77b","#e0a15c","#a15ce0","#3d95ce","#e05c8f","#5cc9e0"];
+const avatarColor = name => AVATAR_COLORS[[...name].reduce((a,c)=>a+c.charCodeAt(0),0) % AVATAR_COLORS.length];
+const initials = name => name.trim().split(/\s+/).slice(0,2).map(w=>w[0].toUpperCase()).join("");
+
+function fmtDate(iso, withYear) {
+  const [y,m,d] = iso.split("-").map(Number);
+  const dt = new Date(y, m-1, d);
+  const opts = { month: "short", day: "numeric" };
+  if (withYear || y !== new Date().getFullYear()) opts.year = "numeric";
+  return dt.toLocaleDateString("en-US", opts);
+}
+
+/* ================= Rendering ================= */
+const $ = id => document.getElementById(id);
+
+function activePayments() { return payments.filter(p => !p.deleted); }
+function studentPayments(sid) {
+  return activePayments().filter(p => p.studentId === sid).sort((a,b)=> b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
+}
+
+function renderStats() {
+  const now = new Date();
+  const yr = String(now.getFullYear());
+  const mo = yr + "-" + String(now.getMonth()+1).padStart(2,"0");
+  let yTotal = 0, mTotal = 0;
+  for (const p of activePayments()) {
+    if (p.date.startsWith(yr)) yTotal += p.amount;
+    if (p.date.startsWith(mo)) mTotal += p.amount;
+  }
+  $("statYear").textContent = fmtMoney(yTotal);
+  $("statYearLabel").textContent = `${yr} total`;
+  $("statMonth").textContent = fmtMoney(mTotal);
+}
+
+function renderSyncBadge() {
+  const pending = students.filter(s=>s.dirty).length + payments.filter(p=>p.dirty).length;
+  const b = $("syncBadge");
+  b.textContent = pending;
+  b.classList.toggle("hidden", pending === 0);
+}
+
+function renderStudents() {
+  const q = $("search").value.trim().toLowerCase();
+  $("clearSearch").style.display = q ? "block" : "none";
+
+  const enriched = students.filter(s => !s.deleted).map(s => {
+    const ps = studentPayments(s.id);
+    return {
+      ...s,
+      total: ps.reduce((a,p)=>a+p.amount,0),
+      classes: ps.reduce((a,p)=>a+p.classes,0),
+      last: ps[0] || null,
+    };
+  }).filter(s => !q || s.name.toLowerCase().includes(q))
+    .sort((a,b) => (b.last?.date || "").localeCompare(a.last?.date || "") || a.name.localeCompare(b.name));
+
+  const list = $("studentList");
+  list.innerHTML = enriched.map(s => `
+    <button class="student" data-id="${s.id}">
+      <div class="avatar" style="background:${avatarColor(s.name)}">${esc(initials(s.name))}</div>
+      <div class="sinfo">
+        <div class="sname">${esc(s.name)}</div>
+        <div class="ssub">${s.last ? `Last paid ${fmtDate(s.last.date)} · ${fmtMoney(s.last.amount)} ${s.last.method}` : "No payments yet"}</div>
+      </div>
+      <div class="stotal">
+        <div class="amt">${fmtMoney(s.total)}</div>
+        <div class="cls">${s.classes} class${s.classes===1?"":"es"}</div>
+      </div>
+    </button>`).join("");
+
+  // "Add student" row when search text doesn't exactly match an existing student
+  const addRow = $("addRow");
+  const exact = students.some(s => !s.deleted && s.name.toLowerCase() === q);
+  if (q && !exact) {
+    addRow.style.display = "flex";
+    addRow.innerHTML = `<span style="font-size:20px">＋</span> Add student “${esc($("search").value.trim())}”`;
+  } else {
+    addRow.style.display = "none";
+  }
+
+  if (!students.length && !q) {
+    list.innerHTML = `<div class="empty"><div class="big">👋</div>Type a student's name above<br>to add your first student.</div>`;
+  } else if (!enriched.length && q && exact === false) {
+    // add row shown, nothing else
+  }
+  renderStats();
+  renderSyncBadge();
+}
+
+/* ================= Student sheet ================= */
+function openStudent(id) {
+  currentStudentId = id;
+  const s = students.find(x => x.id === id);
+  if (!s) return;
+  $("shName").textContent = s.name;
+
+  // Prefill quick-add from last payment
+  const ps = studentPayments(id);
+  const last = ps[0];
+  $("qaAmount").value = last ? String(last.amount) : "";
+  qaClassCount = last ? last.classes : 1;
+  $("qaClasses").textContent = qaClassCount;
+  qaMethod = last ? last.method : (s.lastMethod || "Cash");
+  updateMethodButtons();
+  $("qaDate").value = todayStr();
+
+  renderStudentSheet();
+  showSheet("studentSheet");
+}
+
+function renderStudentSheet() {
+  const s = students.find(x => x.id === currentStudentId);
+  if (!s) return;
+  const ps = studentPayments(s.id);
+  const total = ps.reduce((a,p)=>a+p.amount,0);
+  const cls = ps.reduce((a,p)=>a+p.classes,0);
+  $("shSub").textContent = ps.length ? `${ps.length} payment${ps.length===1?"":"s"}` : "New student";
+  $("shTotals").innerHTML = `
+    <div class="pill">Total <b>${fmtMoney(total)}</b></div>
+    <div class="pill">Classes <b>${cls}</b></div>
+    ${ps.length ? `<div class="pill">Avg <b>${fmtMoney(total/Math.max(cls,1))}</b>/class</div>` : ""}`;
+  $("histCount").textContent = ps.length ? `${ps.length} record${ps.length===1?"":"s"}` : "";
+  $("payList").innerHTML = ps.length ? ps.map(p => `
+    <div class="payrow">
+      <div class="paydate">${fmtDate(p.date)}<span class="yr">${p.date.slice(0,4)}</span></div>
+      <div class="payinfo">
+        ${p.classes} class${p.classes===1?"":"es"}
+        <span class="chip ${p.method.toLowerCase()}">${p.method}</span>
+      </div>
+      <div class="payamt">${fmtMoney(p.amount)}</div>
+      <button class="del" data-del="${p.id}" aria-label="Delete payment">🗑</button>
+    </div>`).join("")
+    : `<div class="empty" style="padding:24px">No payments yet — add the first one above.</div>`;
+}
+
+function updateMethodButtons() {
+  document.querySelectorAll("#studentSheet .method").forEach(btn => {
+    const m = btn.dataset.m;
+    btn.className = "method" + (m === qaMethod ? " sel-" + m.toLowerCase() : "");
+  });
+}
+
+function addPayment() {
+  const s = students.find(x => x.id === currentStudentId);
+  if (!s) return;
+  const amount = parseFloat($("qaAmount").value.replace(/[^0-9.]/g,""));
+  if (!amount || amount <= 0) { toast("Enter an amount", "err"); $("qaAmount").focus(); return; }
+  const date = $("qaDate").value || todayStr();
+  payments.push({
+    id: uid(), studentId: s.id, studentName: s.name,
+    amount, classes: qaClassCount, date, method: qaMethod,
+    createdAt: Date.now(), dirty: true,
+  });
+  s.lastMethod = qaMethod;
+  s.dirty = true;
+  persist();
+  renderStudentSheet(); renderStudents();
+  toast(`${fmtMoney(amount)} · ${s.name} ✓`, "ok");
+  if (navigator.vibrate) navigator.vibrate(10);
+}
+
+/* ================= Sheets & overlay ================= */
+function showSheet(id) {
+  $("overlay").classList.add("show");
+  $(id).classList.add("show");
+}
+function hideSheets() {
+  $("overlay").classList.remove("show");
+  document.querySelectorAll(".sheet").forEach(s => s.classList.remove("show"));
+  currentStudentId = null;
+}
+
+/* ================= Toast ================= */
+let toastTimer;
+function toast(msg, kind = "") {
+  const t = $("toast");
+  t.textContent = msg;
+  t.className = "toast show " + kind;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 2200);
+}
+
+/* ================= CSV export ================= */
+function exportCsv() {
+  const rows = [["Date","Student","Amount","Classes","Method"]];
+  const ps = activePayments().sort((a,b)=> a.date.localeCompare(b.date));
+  for (const p of ps) rows.push([p.date, p.studentName, p.amount, p.classes, p.method]);
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(",")).join("\r\n");
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+  const file = new File([blob], `student-payments-${todayStr()}.csv`, { type: "text/csv" });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    navigator.share({ files: [file], title: "Student payments" }).catch(()=>{});
+  } else {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = file.name;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+}
+
+/* ================= Cloud sync ================= */
+function cloudReady() { return settings.endpoint && settings.token; }
+
+async function syncNow(silent) {
+  if (!cloudReady()) {
+    if (!silent) { toast("Set up cloud in Settings first", "err"); openSettings(); }
+    return;
+  }
+  const dirtyStudents = students.filter(s => s.dirty);
+  const dirtyPayments = payments.filter(p => p.dirty);
+  if (!dirtyStudents.length && !dirtyPayments.length) {
+    if (!silent) toast("Everything already synced ✓", "ok");
+    return;
+  }
+  $("syncIcon").innerHTML = `<span class="spin">🔄</span>`;
+  try {
+    const res = await fetch(settings.endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        token: settings.token,
+        students: dirtyStudents.map(({dirty, ...s}) => s),
+        payments: dirtyPayments.map(({dirty, ...p}) => p),
+      }),
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const out = await res.json();
+    if (!out.ok) throw new Error(out.error || "sync failed");
+    // fully drop tombstones that made it to the cloud, clear dirty flags on the rest
+    students = students.filter(s => !(s.dirty && s.deleted));
+    students.forEach(s => delete s.dirty);
+    payments = payments.filter(p => !(p.dirty && p.deleted));
+    payments.forEach(p => delete p.dirty);
+    settings.lastSyncAt = Date.now();
+    persist(); persistSettings();
+    renderSyncBadge(); renderSyncNote();
+    toast(`Synced ${out.saved} record${out.saved===1?"":"s"} to cloud ✓`, "ok");
+  } catch (e) {
+    toast("Sync failed: " + e.message, "err");
+  } finally {
+    $("syncIcon").textContent = "☁️";
+  }
+}
+
+async function restoreFromCloud() {
+  if (!cloudReady()) { toast("Set endpoint & token first", "err"); return; }
+  if (students.length || activePayments().length) {
+    if (!confirm("Replace all data on this phone with the cloud copy?")) return;
+  }
+  try {
+    const url = settings.endpoint + (settings.endpoint.includes("?") ? "&" : "?") +
+      "mode=json&token=" + encodeURIComponent(settings.token);
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "restore failed");
+    students = data.students || [];
+    payments = data.payments || [];
+    persist();
+    hideSheets(); renderStudents(); renderSyncNote();
+    toast(`Restored ${students.length} students, ${payments.length} payments ✓`, "ok");
+  } catch (e) {
+    toast("Restore failed: " + e.message, "err");
+  }
+}
+
+/* ================= Settings ================= */
+function openSettings() {
+  $("setEndpoint").value = settings.endpoint;
+  $("setToken").value = settings.token;
+  renderSyncNote();
+  showSheet("settingsSheet");
+}
+function renderSyncNote() {
+  const n = $("syncNote");
+  if (!cloudReady()) { n.textContent = "Cloud sync not configured — data lives on this phone only. CSV export still works."; return; }
+  n.textContent = settings.lastSyncAt
+    ? "Last synced " + new Date(settings.lastSyncAt).toLocaleString()
+    : "Cloud configured — tap ☁️ on the home screen to sync.";
+}
+
+/* ================= Events ================= */
+$("search").addEventListener("input", renderStudents);
+$("search").addEventListener("keydown", e => {
+  if (e.key === "Enter" && $("addRow").style.display !== "none") addStudentFromSearch();
+});
+$("clearSearch").addEventListener("click", () => { $("search").value = ""; renderStudents(); });
+$("addRow").addEventListener("click", addStudentFromSearch);
+
+function addStudentFromSearch() {
+  const name = $("search").value.trim().replace(/\s+/g, " ");
+  if (!name) return;
+  const s = { id: uid(), name, createdAt: Date.now(), lastMethod: "Cash", dirty: true };
+  students.push(s);
+  persist();
+  $("search").value = "";
+  renderStudents();
+  openStudent(s.id);
+  toast(`Added ${name}`, "ok");
+}
+
+$("studentList").addEventListener("click", e => {
+  const btn = e.target.closest(".student");
+  if (btn) openStudent(btn.dataset.id);
+});
+
+$("overlay").addEventListener("click", hideSheets);
+$("closeStudent").addEventListener("click", hideSheets);
+$("closeSettings").addEventListener("click", hideSheets);
+
+$("clsMinus").addEventListener("click", () => { if (qaClassCount > 1) { qaClassCount--; $("qaClasses").textContent = qaClassCount; } });
+$("clsPlus").addEventListener("click", () => { qaClassCount++; $("qaClasses").textContent = qaClassCount; });
+document.querySelectorAll("#studentSheet .method").forEach(btn =>
+  btn.addEventListener("click", () => { qaMethod = btn.dataset.m; updateMethodButtons(); }));
+$("qaSave").addEventListener("click", addPayment);
+
+$("payList").addEventListener("click", e => {
+  const del = e.target.closest("[data-del]");
+  if (!del) return;
+  const p = payments.find(x => x.id === del.dataset.del);
+  if (p && confirm(`Delete ${fmtMoney(p.amount)} payment on ${fmtDate(p.date, true)}?`)) {
+    p.deleted = true; p.dirty = true;
+    persist(); renderStudentSheet(); renderStudents();
+  }
+});
+
+$("deleteStudent").addEventListener("click", () => {
+  const s = students.find(x => x.id === currentStudentId);
+  if (!s) return;
+  const n = studentPayments(s.id).length;
+  if (!confirm(`Delete ${s.name}${n ? ` and their ${n} payment(s)` : ""}? This also removes them from the cloud on next sync.`)) return;
+  payments.forEach(p => { if (p.studentId === s.id) { p.deleted = true; p.dirty = true; } });
+  s.deleted = true; s.dirty = true; // tombstone kept until next sync tells the cloud
+  persist(); hideSheets(); renderStudents();
+  toast(`Deleted ${s.name}`, "ok");
+});
+
+$("syncBtn").addEventListener("click", () => syncNow(false));
+$("settingsBtn").addEventListener("click", openSettings);
+$("saveSettings").addEventListener("click", () => {
+  settings.endpoint = $("setEndpoint").value.trim();
+  settings.token = $("setToken").value.trim();
+  persistSettings(); renderSyncNote();
+  toast("Settings saved ✓", "ok");
+});
+$("exportCsv").addEventListener("click", exportCsv);
+$("restoreBtn").addEventListener("click", restoreFromCloud);
+$("wipeBtn").addEventListener("click", () => {
+  if (!confirm("Erase ALL students and payments stored on this phone? (Cloud data is not touched.)")) return;
+  students = []; payments = [];
+  persist(); hideSheets(); renderStudents();
+  toast("Local data erased", "ok");
+});
+
+window.addEventListener("pagehide", () => persist());
+
+/* auto-sync when app regains connectivity */
+window.addEventListener("online", () => { if (cloudReady()) syncNow(true); });
+
+/* ================= Init ================= */
+$("qaDate").value = todayStr();
+renderStudents();
+renderSyncNote();
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js").catch(()=>{});
+}
+</script>
+</body>
+</html>
